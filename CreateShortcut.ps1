@@ -132,11 +132,11 @@ function CreateShortcut {
         [Parameter(Position = 0, ParameterSetName = "", Mandatory)]
         [string] $TargetPath,
         [Parameter(ParameterSetName = "")]
-        [string] $Arguments,
+        [string] $Arguments,        # 捷徑的參數
         [Parameter(ParameterSetName = "")]
-        [string] $WorkingDirectory,
+        [string] $WorkingDirectory, # 捷徑的開始位置
         [Parameter(ParameterSetName = "")]
-        [string] $Description,
+        [string] $Description,      # 捷徑的描述
         # 輸出位置
         [Parameter(ParameterSetName = "")]
         [string] $Path
@@ -191,8 +191,8 @@ function CreateShortcut {
     # 回傳物件
     return $link
 }
-# CreateShortcut "C:\Users\User\Desktop\README.md"
-# CreateShortcut "C:\Users\User\Desktop\README.md" -Path "aaa.ink"
-# CreateShortcut "C:\Users\User\Desktop\README.md" -Path "bbb.exe"
-# CreateShortcut "C:\Users\User\Desktop\README.md" -Path DirName
-# CreateShortcut "C:\Users\User\Desktop\README.md" -Description "Test Description"
+# CreateShortcut ".\README.md"
+# CreateShortcut ".\README.md" -Path "aaa.ink"
+# CreateShortcut ".\README.md" -Path "bbb.exe"
+# CreateShortcut ".\README.md" -Path DirName
+# CreateShortcut ".\README.md" -Description "Test Description"
