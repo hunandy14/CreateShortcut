@@ -146,32 +146,29 @@ function CreateShortcut {
     [IO.Directory]::SetCurrentDirectory(((Get-Location -PSProvider FileSystem).ProviderPath))
     if ($TargetPath) {
         $TargetPath = [System.IO.Path]::GetFullPath($TargetPath)
-        if (!(Test-Path -PathType:Leaf $TargetPath)) { Write-Error "Error:: Target path `"$TargetPath`" does not exist" -ErrorAction:Stop }
-    } $File = Get-Item -Path $TargetPath
+        if (!(Test-Path $TargetPath)) { Write-Error "Error:: Target path `"$TargetPath`" does not exist" -ErrorAction:Stop }
+    } $File = Get-Item -Path $TargetPath -ErrorAction Stop
 
     # 修正 Path 路徑
     if ($Path) { $Path = [System.IO.Path]::GetFullPath($Path) }
-    if (!$Path) { # 路徑為空自動補上當前路徑
-        $Path = Join-Path -Path (Get-Location) -ChildPath ($File.BaseName + ".lnk")
-    } else { # 路徑參數存在
-        $Extension = [IO.Path]::GetExtension($Path)
-        if (!$Extension) {
-            $Path = $Path + "\$($File.BaseName).lnk"
-            $DirPath = Split-Path $Path
-            if (!(Test-Path $DirPath)) { New-Item $DirPath -ItemType:Directory -Force |Out-Null }
-        } elseif($Extension -ne '.lnk') {
-            $Path = $Path + '.lnk'
+    if (!$Path) { # 路徑為空自動補上當前工作路徑
+        $Path = Join-Path -Path (Get-Location) -ChildPath $File.BaseName
+    } else { # 輸出路徑是資料夾
+        if (!([IO.Path]::GetExtension($Path))) { 
+            $Path = Join-Path -Path $Path -ChildPath $File.BaseName
         }
     }
-
-    # 工作目錄 預設為目標檔案所在目錄
-    if (!$WorkingDirectory) { $WorkingDirectory = $File.DirectoryName }
+    # 追加捷徑副檔名
+    if ([IO.Path]::GetExtension($Path) -ne '.lnk') { $Path = "$Path.lnk" }
     
-    # 創建空捷徑檔案
-    $randomPath = Join-Path -Path (Get-Location) -ChildPath ([IO.Path]::GetRandomFileName() + ".lnk")
+    # 創建捷徑檔案
+    do {
+        $randomPath = Join-Path -Path $env:TEMP -ChildPath (([IO.Path]::GetRandomFileName()) -replace '\..+$', '.lnk')
+    } while (Test-Path $randomPath)
     $WshShell = New-Object -ComObject WScript.Shell
     $Shortcut = $WshShell.CreateShortcut($randomPath)
     $Shortcut.Save()
+    $DstDir = Split-Path $Path; if (!(Test-Path $DstDir)) { New-Item $DstDir -ItemType:Directory -Force |Out-Null }
     Move-Item -Path $randomPath -Destination $Path -Force
 
     # 讀取 ShellLink 物件
@@ -184,7 +181,7 @@ function CreateShortcut {
     # 修改屬性
     if ($TargetPath)       { $link.Path = $TargetPath }
     if ($Arguments)        { $link.Arguments = $Arguments }
-    if ($WorkingDirectory) { $link.WorkingDirectory = $WorkingDirectory }
+    if ($WorkingDirectory) { $link.WorkingDirectory = $WorkingDirectory } else { $link.WorkingDirectory = $File.DirectoryName }
     if ($Description)      { $link.Description = $Description }
     $link.Save()
 
@@ -192,7 +189,12 @@ function CreateShortcut {
     return $link
 }
 # CreateShortcut ".\README.md"
-# CreateShortcut ".\README.md" -Path "aaa.ink"
-# CreateShortcut ".\README.md" -Path "bbb.exe"
-# CreateShortcut ".\README.md" -Path DirName
+# CreateShortcut ".\README.md" -Path "FileName.lnk"
+# CreateShortcut ".\README.md" -Path "AppName.exe"
+# CreateShortcut ".\README.md" -Path "DirName"
 # CreateShortcut ".\README.md" -Description "Test Description"
+# CreateShortcut ".\README.md" -Path "D:\aaa\DirName"
+# CreateShortcut ".\README.md" -Path "D:\aaa\bbb\ccc.lnk"
+# CreateShortcut "TestDir"
+# CreateShortcut "TestDir" -Path "DirName"
+# CreateShortcut "TestDir" -Path "DirName.lnk"
